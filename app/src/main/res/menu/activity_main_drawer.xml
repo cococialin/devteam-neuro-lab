@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <item android:title="Date de intrare">
+
+        <menu>
+        <item
+            android:id="@+id/nav_camera"
+            android:icon="@drawable/ic_menu_camera"
+            android:title="Camera" />
+
+        <item
+            android:id="@+id/nav_screen_input"
+            android:icon="@drawable/ic_brush"
+            android:title="Desen ecran" />
+        <item
+            android:id="@+id/nav_db_input"
+            android:icon="@drawable/ic_file"
+            android:title="Baze de date .csv" />
+        </menu>
+
+    </item>
+
+    <item android:title="Model neuronal">
+        <menu>
+            <item
+                android:id="@+id/nav_import"
+                android:icon="@drawable/ic_import"
+                android:title="Import" />
+            <item
+                android:id="@+id/nav_select_model"
+                android:icon="@drawable/ic_select"
+                android:title="Selecteaza model" />
+        </menu>
+    </item>
+
+</menu>

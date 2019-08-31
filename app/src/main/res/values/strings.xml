@@ -1,0 +1,47 @@
+<resources>
+    <string name="app_name">ELM Android</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+    <string name="prediction">Predictie</string>
+    <string name="probability">Probabilitate</string>
+    <string name="timecost">Timp</string>
+    <string name="timecost_value">%1$d ms</string>
+    <string name="empty">--</string>
+    <string name="detect">Clasificare</string>
+    <string name="clear">Sterge</string>
+    <string name="please_write_a_digit">Va rugam desenati o cifra in cutia de mai sus.</string>
+    <string name="failed_to_create_classifier">Nu s-a putut creea un clasificator.</string>
+
+    <string name="request_permission">This sample needs camera permission.</string>
+    <string name="camera_error">This device doesn\'t support Camera2 API.</string>
+    <string name="toggle_turn_on">NN:On</string>
+    <string name="toggle_turn_off">NN:Off</string>
+    <string name="toggle">Use NNAPI</string>
+    <string name="tflite">tflite</string>
+    <string name="nnapi">NNAPI</string>
+    <string name="threads">Threads:</string>
+
+    <string name="model">Model:</string>
+    <string-array name="models">
+        <!--<item>Quantized</item>-->
+        <item>Float</item>
+    </string-array>
+
+    <string name="device">Device:</string>
+    <string-array name="devices">
+        <item>CPU</item>
+        <item>GPU</item>
+        <item>NNAPI</item>
+    </string-array>
+
+    <string name="flip_img">Flip IMG:</string>
+    <string-array name="flip_imgs">
+        <item>--</item>
+        <item>X</item>
+        <item>Y</item>
+    </string-array>
+</resources>
