@@ -1,7 +1,9 @@
 # devteam-neuro-lab
 Android application for testing tflite models. One can export Keras models and convert the .h5 file to .tflite file to test it on a mobile device.
 
-Use this code to convert Keras model to TensorflowLite model (this code can be run on Kaggle or Google CoLab):
+# Use this code to convert Keras model to TensorflowLite model: 
+
+// This code can be run on Kaggle or Google CoLab
 
 // Load architecture from json and weights from .h5 file 
 from tensorflow import lite
