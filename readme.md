@@ -1,4 +1,4 @@
-# devteam-neuro-lab
+# Android App for CNN Test
 Android application for testing tflite models. One can export Keras models and convert the .h5 file to .tflite file to test it on a mobile device.
 
 # Use this code to convert Keras model to TensorflowLite model: 
