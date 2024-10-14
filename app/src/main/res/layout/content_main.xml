@@ -13,30 +13,121 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Test folder path:"
+                android:textColor="@android:color/black" />
+
+            <EditText
+                android:id="@+id/test_folder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:background="@drawable/rectangle"
+                android:inputType="text"
+                android:text="/sdcard/Download/6OD-128"
+                />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Width:"
+                android:textColor="@android:color/black" />
+
+            <EditText
+                android:id="@+id/img_width"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:background="@drawable/rectangle"
+                android:inputType="text"
+                android:text="128"
+                />
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Height:"
+                android:textColor="@android:color/black" />
+
+            <EditText
+                android:id="@+id/img_height"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:background="@drawable/rectangle"
+                android:inputType="text"
+                android:text="128"
+                />
+
+        </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
+
         <Button
             android:id="@+id/model"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Model"/>
-        <Button
-            android:id="@+id/browse"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Samples"/>
-        <Button
-            android:id="@+id/browse2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Labels"/>
+<!--        <Button-->
+<!--            android:id="@+id/browse"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Samples"/>-->
+<!--        <Button-->
+<!--            android:id="@+id/browse2"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Labels"/>-->
         <Button
             android:id="@+id/start"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Start"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Classes:"
+                android:textColor="@android:color/black" />
+
+            <EditText
+                android:id="@+id/classes"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/rectangle"
+                android:inputType="number"
+                android:text="6"
+                />
+
+        </LinearLayout>
+
     </LinearLayout>
 
     <LinearLayout

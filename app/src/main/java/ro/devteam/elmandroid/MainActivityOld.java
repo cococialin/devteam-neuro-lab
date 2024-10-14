@@ -2,13 +2,11 @@ package ro.devteam.elmandroid;
 
 import android.Manifest;
 import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
-import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Build;
@@ -16,7 +14,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
-import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -43,7 +40,6 @@ import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.GpuDelegate;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,16 +47,16 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.Collections;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Optional;
+import de.siegmar.fastcsv.reader.CsvContainer;
+import de.siegmar.fastcsv.reader.CsvRow;
 import ro.devteam.elmandroid.tflite.Classifier;
 
-public class MainActivity extends AppCompatActivity
+public class MainActivityOld extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,View.OnClickListener,
         AdapterView.OnItemSelectedListener {
 
@@ -74,18 +70,18 @@ public class MainActivity extends AppCompatActivity
     private TextView log;
 
     public int batch_size = 1;
-    public int img_height = 96;
-    public int img_width = 96;
-    public int num_channel = 3;
-    public int num_classes = 6;
+    public int img_height = 28;
+    public int img_width = 28;
+    public int num_channel = 1;
+    public int num_classes = 10;
     public int pixel_size = 1;
     public int channel_bytes = 4;
     public int img_rotation = 0;
     public String img_flip = "--";
 //    public int norm_min = -1;
 //    public int norm_max = 1;
-    public int norm_min = -1;
-    public int norm_max = 1;
+    public int norm_min = 0;
+    public int norm_max = 255;
     public int quantized = 0;
     public int selected = 1;
 
@@ -107,14 +103,10 @@ public class MainActivity extends AppCompatActivity
     private int[] mImagePixels = new int[img_height * img_width];
     private float[][] mResult = new float[1][num_classes];
 
-    int[] array = new int[700000];
+    int[] array = new int[784];
 
+    CsvContainer samples, labels;
     Uri modelUri;
-
-    ArrayList<String> labels, samples;
-    ArrayList<Integer> labels2;
-
-    String tempResult;
 
     int n;
     int positiv = 0;
@@ -126,10 +118,8 @@ public class MainActivity extends AppCompatActivity
     Bitmap bitmap3;
     int progress = 0;
 
-    private static final float IMAGE_MEAN = 0f;
-    private static final float IMAGE_STD = 255f;
-//    private static final float IMAGE_MEAN = 127.5f;
-//    private static final float IMAGE_STD = 127.5f;
+    Exception er;
+
 
     @Nullable
     @BindView(R.id.img) ImageView img;
@@ -141,41 +131,6 @@ public class MainActivity extends AppCompatActivity
     @BindView(R.id.samples) TextView textSample;
     @Nullable
     @BindView(R.id.rotate_img) EditText rotate_img;
-    @Nullable
-    @BindView(R.id.classes) EditText classes;
-    @Nullable
-    @BindView(R.id.test_folder) EditText test_folder;
-    @Nullable
-    @BindView(R.id.img_width) EditText text_img_width;
-    @Nullable
-    @BindView(R.id.img_height) EditText text_img_height;
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int PERMISSION_ALL = 1;
-            String[] PERMISSIONS = {
-                    android.Manifest.permission.CAMERA,
-                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            };
-
-            if (!hasPermissions(this, PERMISSIONS)) {
-                ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
-            }
-        }
-    }
-
-    public static boolean hasPermissions(Context context, String... permissions) {
-        if (context != null && permissions != null) {
-            for (String permission : permissions) {
-                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -240,41 +195,19 @@ public class MainActivity extends AppCompatActivity
        img_rotation = Integer.parseInt(rotate_img.getText().toString());
        log.append("\nRotated images: " + img_rotation + " degrees\n");
 
-//       bitmap = rotateBitmap(bitmap, img_rotation);
-//       bitmap2 = rotateBitmap(bitmap2, img_rotation);
-//       bitmap3 = rotateBitmap(bitmap3, img_rotation);
-//
-//        if(img.getDrawable() != null) {
-//            img.setImageBitmap(bitmap);
-//        }
-//        if(img2.getDrawable() != null){
-//            img2.setImageBitmap(bitmap2);
-//        }
-//        if(img3.getDrawable() != null){
-//            img3.setImageBitmap(bitmap3);
-//        }
-    }
+       bitmap = rotateBitmap(bitmap, img_rotation);
+       bitmap2 = rotateBitmap(bitmap2, img_rotation);
+       bitmap3 = rotateBitmap(bitmap3, img_rotation);
 
-    @Optional
-    @OnClick(R.id.classes)
-    void onClassesClick() {
-       num_classes = Integer.parseInt(classes.getText().toString());
-       mResult = new float[1][num_classes];
-       log.append("\nClasses: " + num_classes + "\n");
-
-//       bitmap = rotateBitmap(bitmap, img_rotation);
-//       bitmap2 = rotateBitmap(bitmap2, img_rotation);
-//       bitmap3 = rotateBitmap(bitmap3, img_rotation);
-//
-//        if(img.getDrawable() != null) {
-//            img.setImageBitmap(bitmap);
-//        }
-//        if(img2.getDrawable() != null){
-//            img2.setImageBitmap(bitmap2);
-//        }
-//        if(img3.getDrawable() != null){
-//            img3.setImageBitmap(bitmap3);
-//        }
+        if(img.getDrawable() != null) {
+            img.setImageBitmap(bitmap);
+        }
+        if(img2.getDrawable() != null){
+            img2.setImageBitmap(bitmap2);
+        }
+        if(img3.getDrawable() != null){
+            img3.setImageBitmap(bitmap3);
+        }
     }
 
     @Optional
@@ -288,11 +221,10 @@ public class MainActivity extends AppCompatActivity
             Log.e("tag", "No activity can handle picking a file. Showing alternatives.");
         }
     }
-//
+
 //    @Optional
 //    @OnClick(R.id.browse)
 //    void onBrowseClick() {
-//
 //        Intent fileintent = new Intent(Intent.ACTION_GET_CONTENT);
 //        fileintent.setType("*/*");
 //        try {
@@ -318,14 +250,12 @@ public class MainActivity extends AppCompatActivity
     @OnClick(R.id.start)
     void onStartClick() {
 
+        log.append("\nStart");
         Thread thread = new Thread() {
             @Override
             public void run() {
 
                         try {
-
-                            img_width = Integer.parseInt(text_img_width.getText().toString());
-                            img_height = Integer.parseInt(text_img_height.getText().toString());
 
                             options = new Interpreter.Options();
                             switch (device) {
@@ -344,78 +274,7 @@ public class MainActivity extends AppCompatActivity
                             mImageData = ByteBuffer.allocateDirect(channel_bytes * batch_size * img_height * img_width * num_channel);
                             mImageData.order(ByteOrder.nativeOrder());
 
-                            String basePath = test_folder.getText().toString();
-                            File files = new File(  basePath);
-
-                            labels = new ArrayList<>();
-                            samples = new ArrayList<>();
-                            labels2 = new ArrayList<>();
-                            if(files.exists()) {
-                                for (File inFile : files.listFiles()) {
-                                    if (inFile.isDirectory()) {
-                                        labels.add(inFile.getName());
-                                    }
-                                }
-                            } else {
-                                runOnUiThread(
-                                        new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                log.append( "\nNo directory found at test folder path.");
-                                            }
-                                        });
-                            }
-
-
-                            Collections.sort(labels);
-
-                            runOnUiThread(
-                                    new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            log.append( "\nLabels found: " + String.join(", ", labels));
-                                        }
-                                    });
-
-
-
-//                            for(String label : labels) {
-                            for(int g = 0; g < labels.size(); g++) {
-                                files = new File(basePath + "/" + labels.get(g));
-                                if(files.exists()) {
-                                    for (File inFile : files.listFiles()) {
-                                        if (inFile.getName().toLowerCase().endsWith("jpg") ||
-                                                inFile.getName().toLowerCase().endsWith("png") ||
-                                                inFile.getName().toLowerCase().endsWith("gif") ||
-                                                inFile.getName().toLowerCase().endsWith("jpeg")) {
-                                            samples.add(basePath + "/" + labels.get(g) + "/" + inFile.getName());
-                                            labels2.add(g);
-                                        }
-                                    }
-                                } else {
-                                    runOnUiThread(
-                                            new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    log.append( "\nNo directory labels found at test folder path.");
-                                                }
-                                            });
-                                }
-                            }
-
-
-                            runOnUiThread(
-                                    new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            log.append( "\nTest images found: " + samples.size()  + "\n");
-                                        }
-                                    });
-
-
-
-
-                             n = samples.size();
+                             n = samples.getRow(0).getFieldCount();
                              positiv = 0;
                              progress = 0;
 
@@ -428,7 +287,20 @@ public class MainActivity extends AppCompatActivity
                                 if(img_rotation > 0 || !img_flip.contentEquals("--")) {
                                     mImageData.rewind();
 
-                                    tempBitmap = BitmapFactory.decodeFile(samples.get(i));
+                                    int p = 0;
+                                    for (CsvRow row : samples.getRows()) {
+                                        array[p++] = Math.round(Float.parseFloat(row.getField(i)));
+                                    }
+
+                                    int min = min(array);
+                                    int max = max(array);
+
+                                    for (int j = 0; j < array.length; j++) {
+                                        array[j] = Color.rgb(Math.round(normalizePixel(array[j], min, max)),0,0);
+                                    }
+
+                                    tempBitmap = Bitmap.createBitmap(img_width, img_width, Bitmap.Config.ARGB_8888);
+                                    tempBitmap.setPixels(array, 0, tempBitmap.getWidth(), 0, 0, tempBitmap.getWidth(), tempBitmap.getHeight());
 
                                     if(img_rotation > 0)
                                         tempBitmap = rotateBitmap(tempBitmap, img_rotation);
@@ -440,104 +312,27 @@ public class MainActivity extends AppCompatActivity
                                     tempBitmap.getPixels(array, 0, tempBitmap.getWidth(), 0, 0,
                                             tempBitmap.getWidth(), tempBitmap.getHeight());
 
-                                    int min = min(array);
-                                    int max = max(array);
 
-                                    int pixel = 0;
-                                    for (int k = 0; k < img_width; ++k) {
-                                        for (int j = 0; j < img_height; ++j) {
-                                            final int val = array[pixel++];
-                                            mImageData.putFloat((((val >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                                            mImageData.putFloat((((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                                            mImageData.putFloat(((val & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+                                    for (int j = 0; j < array.length; j++) {
+                                            int value = array[j];
+
+                                            mImageData.putFloat(normalizePixel(convertPixel(value), min, max, 0 , 1));
                                         }
-                                    }
-
-
-//                                    for (int j = 0; j < array.length; j++) {
-//                                        int value = array[j];
-//
-//                                        mImageData.putFloat(normalizePixel(convertPixel(value), min, max, 0 , 1));
-//                                    }
-
 
 
                                 } else {
                                     mImageData.rewind();
-
-                                    tempBitmap = BitmapFactory.decodeFile(samples.get(i));
-
-                                    tempBitmap.getPixels(array, 0, tempBitmap.getWidth(), 0, 0,
-                                            tempBitmap.getWidth(), tempBitmap.getHeight());
-
-                                    int min = min(array);
-                                    int max = max(array);
-
-                                    int pixel = 0;
-                                    for (int k = 0; k < img_width; ++k) {
-                                        for (int j = 0; j < img_height; ++j) {
-                                            final int val = array[pixel++];
-                                            mImageData.putFloat((((val >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                                            mImageData.putFloat((((val >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                                            mImageData.putFloat(((val & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                                        }
+                                    for (CsvRow row : samples.getRows()) {
+                                        mImageData.putFloat(Float.parseFloat(row.getField(i)));
                                     }
-
-//                                    for (int j = 0; j < array.length; j++) {
-//                                        int value = array[j];
-//
-//                                        mImageData.putFloat(normalizePixel(convertPixel(value), min, max, 0 , 1));
-//                                    }
-
-
-
                                 }
-
-                                runOnUiThread(
-                                        new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                img.setImageBitmap(tempBitmap);
-
-                                            }
-                                        });
 
                                 mInterpreter.run(mImageData, mResult);
                                 long endTime = SystemClock.uptimeMillis();
-                                if(argmax(mResult[0]) == labels2.get(i)) {
+                                if(argmax(mResult[0]) == Integer.parseInt(labels.getRow(0).getField(i))-1) {
                                     positiv++;
 
-                                    tempResult = "\n" + samples.get(i);
-                                    tempResult += "\nResult: ";
-                                    for (int d = 0; d < mResult[0].length; d++) {
-                                        tempResult +=  mResult[0][d] + ",";
-                                    }
-                                    tempResult += " Label: " + labels2.get(i) + " - correct";
-//                                    runOnUiThread(
-//                                            new Runnable() {
-//                                                @Override
-//                                                public void run() {
-//                                                    log.append(tempResult );
-//                                                }
-//                                            });
-
-                                } else {
-                                    tempResult = "\n" + samples.get(i);
-                                    tempResult += "\nResult: ";
-                                    for (int d = 0; d < mResult[0].length; d++) {
-                                        tempResult +=  mResult[0][d] + ",";
-                                    }
-                                    tempResult += " Label: " + labels2.get(i);
-//                                    runOnUiThread(
-//                                            new Runnable() {
-//                                                @Override
-//                                                public void run() {
-//                                                    log.append(tempResult );
-//                                                }
-//                                            });
                                 }
-
-
 
                                 progress++;
                                 runOnUiThread(
@@ -584,12 +379,15 @@ public class MainActivity extends AppCompatActivity
 
                         } catch (Exception e) {
                             e.printStackTrace();
+                            er = e;
 
                             runOnUiThread(
                                     new Runnable() {
                                         @Override
                                         public void run() {
-                                            textSample.setText("Error: " + e.getMessage());
+
+                                            log.append("\nError " + er.getMessage());
+
                                         }
                                     });
                         }
@@ -615,77 +413,76 @@ public class MainActivity extends AppCompatActivity
         switch (requestCode) {
             case PICKFILE_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
+                    String FilePath = data.getData().getPath();
+                    OldDatabase db = new OldDatabase("mnist", this);
 
-//                    String FilePath = data.getData().getPath();
-//                    OldDatabase db = new OldDatabase("mnist", this);
-//
-//                    try {
-//                        samples = db.readExternalCSV(data.getData());
-//                        log.append("\nLoaded samples");
-//
-//                        Thread thread = new Thread() {
-//                            @Override
-//                            public void run() {
-//
-////                                        n = samples.getRow(0).getFieldCount();
-//                                        n = 3;
-//                                        for (int i = 0; i < n; i++) {
-//
-//                                            int p = 0;
-//                                            for (CsvRow row : samples.getRows()) {
-//                                                array[p++] = Math.round(Float.parseFloat(row.getField(i)));
-//                                            }
-//
-//                                            int min = min(array);
-//                                            int max = max(array);
-//
-//                                            for (int j = 0; j < array.length; j++) {
-//                                                array[j] = Color.rgb(Math.round(normalizePixel(array[j], min, max)),0,0);
-//                                            }
-//
-//                                            if(i == 0) {
-//
-//                                                bitmap = Bitmap.createBitmap(img_width, img_height, Bitmap.Config.ARGB_8888);
-//                                                bitmap.setPixels(array, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-//                                                bitmap = Bitmap.createScaledBitmap(bitmap, 200, 200, false);
-//
-//                                            } else if(i == 1) {
-//                                                bitmap2 = Bitmap.createBitmap(img_width, img_height, Bitmap.Config.ARGB_8888);
-//                                                bitmap2.setPixels(array, 0, bitmap2.getWidth(), 0, 0, bitmap2.getWidth(), bitmap2.getHeight());
-//                                                bitmap2 = Bitmap.createScaledBitmap(bitmap2, 200, 200, false);
-//                                            } else if(i == 2) {
-//                                                bitmap3 = Bitmap.createBitmap(img_width, img_height, Bitmap.Config.ARGB_8888);
-//                                                bitmap3.setPixels(array, 0, bitmap3.getWidth(), 0, 0, bitmap3.getWidth(), bitmap3.getHeight());
-//                                                bitmap3 = Bitmap.createScaledBitmap(bitmap3, 200, 200, false);
-//                                            }
-//
-//
-//                                            runOnUiThread(
-//                                                    new Runnable() {
-//                                                        @Override
-//                                                        public void run() {
-//                                                            if(img.getDrawable() == null)
-//                                                                img.setImageBitmap(bitmap);
-//                                                            else if(img2.getDrawable() == null)
-//                                                                img2.setImageBitmap(bitmap2);
-//                                                            else if(img3.getDrawable() == null)
-//                                                                img3.setImageBitmap(bitmap3);
-//
-//                                                        }
-//                                                    });
-//                                        }
-//
-//
-//                                return;
-//                            }
-//                        };
-//                        thread.start();
-//
-//
-//                    } catch (Exception e) {
-//                        e.getStackTrace();
-//                    }
-//
+                    try {
+                        samples = db.readExternalCSV(data.getData());
+                        log.append("\nLoaded samples");
+
+                        Thread thread = new Thread() {
+                            @Override
+                            public void run() {
+
+//                                        n = samples.getRow(0).getFieldCount();
+                                        n = 3;
+                                        for (int i = 0; i < n; i++) {
+
+                                            int p = 0;
+                                            for (CsvRow row : samples.getRows()) {
+                                                array[p++] = Math.round(Float.parseFloat(row.getField(i)));
+                                            }
+
+                                            int min = min(array);
+                                            int max = max(array);
+
+                                            for (int j = 0; j < array.length; j++) {
+                                                array[j] = Color.rgb(Math.round(normalizePixel(array[j], min, max)),0,0);
+                                            }
+
+                                            if(i == 0) {
+
+                                                bitmap = Bitmap.createBitmap(img_width, img_height, Bitmap.Config.ARGB_8888);
+                                                bitmap.setPixels(array, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+                                                bitmap = Bitmap.createScaledBitmap(bitmap, 200, 200, false);
+
+                                            } else if(i == 1) {
+                                                bitmap2 = Bitmap.createBitmap(img_width, img_height, Bitmap.Config.ARGB_8888);
+                                                bitmap2.setPixels(array, 0, bitmap2.getWidth(), 0, 0, bitmap2.getWidth(), bitmap2.getHeight());
+                                                bitmap2 = Bitmap.createScaledBitmap(bitmap2, 200, 200, false);
+                                            } else if(i == 2) {
+                                                bitmap3 = Bitmap.createBitmap(img_width, img_height, Bitmap.Config.ARGB_8888);
+                                                bitmap3.setPixels(array, 0, bitmap3.getWidth(), 0, 0, bitmap3.getWidth(), bitmap3.getHeight());
+                                                bitmap3 = Bitmap.createScaledBitmap(bitmap3, 200, 200, false);
+                                            }
+
+
+                                            runOnUiThread(
+                                                    new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            if(img.getDrawable() == null)
+                                                                img.setImageBitmap(bitmap);
+                                                            else if(img2.getDrawable() == null)
+                                                                img2.setImageBitmap(bitmap2);
+                                                            else if(img3.getDrawable() == null)
+                                                                img3.setImageBitmap(bitmap3);
+
+                                                        }
+                                                    });
+                                        }
+
+
+                                return;
+                            }
+                        };
+                        thread.start();
+
+
+                    } catch (Exception e) {
+                        e.getStackTrace();
+                    }
+
                 }
                 break;
 
@@ -694,12 +491,12 @@ public class MainActivity extends AppCompatActivity
                     String FilePath = data.getData().getPath();
                     OldDatabase db = new OldDatabase("mnist", this);
 
-//                    try {
-//                        labels = db.readExternalCSV(data.getData());
-//                        log.append("\nLoaded labels");
-//                    } catch (Exception e) {
-//                        e.getStackTrace();
-//                    }
+                    try {
+                        labels = db.readExternalCSV(data.getData());
+                        log.append("\nLoaded labels");
+                    } catch (Exception e) {
+                        e.getStackTrace();
+                    }
 
                 }
                 break;
@@ -710,14 +507,9 @@ public class MainActivity extends AppCompatActivity
                     try {
                         long startTime2 = SystemClock.uptimeMillis();
                         modelUri = data.getData();
-                        Cursor returnCursor = getContentResolver().query(modelUri, null, null, null, null);
-                        int nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                        int sizeIndex = returnCursor.getColumnIndex(OpenableColumns.SIZE);
-                        returnCursor.moveToFirst();
-                        String filename = returnCursor.getString(nameIndex);
                         long endTime2 = SystemClock.uptimeMillis();
                         long timeCost2 = endTime2 - startTime2;
-                        log.append("\nLoaded classifier model: "+ filename);
+                        log.append("\nLoaded classifier model: "+ timeCost2 + "ms");
                     } catch (Exception e) {
                         e.getStackTrace();
                     }
@@ -904,7 +696,7 @@ public class MainActivity extends AppCompatActivity
 
     public  boolean isWriteStoragePermissionGranted() {
         if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
                 Log.v(TAG,"Permission is granted2");
                 return true;
@@ -1025,25 +817,25 @@ public class MainActivity extends AppCompatActivity
              img_flip = parent.getItemAtPosition(pos).toString();
              log.append("\nFliped images: " + img_flip + "\n");
 
-//             if (img_flip.contentEquals("X")) {
-//                 bitmap = flipXBitmap(bitmap);
-//                 bitmap2 = flipXBitmap(bitmap2);
-//                 bitmap3 = flipXBitmap(bitmap3);
-//             } else if (img_flip.contentEquals("Y")) {
-//                 bitmap = flipYBitmap(bitmap);
-//                 bitmap2 = flipYBitmap(bitmap2);
-//                 bitmap3 = flipYBitmap(bitmap3);
-//             }
-//
-//             if(img.getDrawable() != null) {
-//                 img.setImageBitmap(bitmap);
-//             }
-//             if(img2.getDrawable() != null){
-//                 img2.setImageBitmap(bitmap2);
-//             }
-//             if(img3.getDrawable() != null){
-//                 img3.setImageBitmap(bitmap3);
-//             }
+             if (img_flip.contentEquals("X")) {
+                 bitmap = flipXBitmap(bitmap);
+                 bitmap2 = flipXBitmap(bitmap2);
+                 bitmap3 = flipXBitmap(bitmap3);
+             } else if (img_flip.contentEquals("Y")) {
+                 bitmap = flipYBitmap(bitmap);
+                 bitmap2 = flipYBitmap(bitmap2);
+                 bitmap3 = flipYBitmap(bitmap3);
+             }
+
+             if(img.getDrawable() != null) {
+                 img.setImageBitmap(bitmap);
+             }
+             if(img2.getDrawable() != null){
+                 img2.setImageBitmap(bitmap2);
+             }
+             if(img3.getDrawable() != null){
+                 img3.setImageBitmap(bitmap3);
+             }
 
          }
     }
@@ -1098,5 +890,4 @@ public class MainActivity extends AppCompatActivity
                 + (color & 0xFF) * 0.114f)) / 255.0f;
 
     }
-
 }
